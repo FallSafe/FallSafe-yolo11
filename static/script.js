@@ -6,7 +6,7 @@ document.getElementById("saveDetails").addEventListener("click", () => {
         fetch('/send_details', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email ,phonenumber : phone,confidence : conf})
+            body: JSON.stringify({ email: email ,phone : phone,conf : conf})
         })
         .then(response => {
             if (!response.ok) throw new Error("Invalid Details");
@@ -16,6 +16,7 @@ document.getElementById("saveDetails").addEventListener("click", () => {
             alert(data.message);
             document.getElementById("videoStream").style.display = "block";
             document.getElementById("fallStatus").innerText = "Live feed activated.";
+            document.getElementById("fallStatus").style.display = "block";
         })
         .catch(error => alert(`Error: ${error.message}`));
     } else {

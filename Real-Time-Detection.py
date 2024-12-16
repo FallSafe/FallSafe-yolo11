@@ -1,4 +1,5 @@
 import cv2
+import torch
 import threading
 import time
 from ultralytics import YOLO
@@ -6,14 +7,10 @@ from flask import Flask, render_template, Response, request, jsonify
 from Email import send_email_alert
 from Whatsapp import send_whatsapp_alert
 from Message import send_sms_alert
+from icecream import ic
 
-# Load YOLOv8 model
 model = YOLO("model/model.pt")
 
-# Video capture
-cap = cv2.VideoCapture(0)
-
-# Flask app
 app = Flask(__name__)
 
 fall_detected = False
@@ -21,8 +18,8 @@ fall_detected_lock = threading.Lock()
 fall_detected_time = None
 alert_set = False
 recipient = ""
-tonumber=""
-conf = 1
+tonumber = ""
+confidence = 1
 
 def process_predictions(results, frame):
     global fall_detected, fall_detected_time
@@ -30,7 +27,7 @@ def process_predictions(results, frame):
     model_names = model.names
 
     for box in boxes:
-        class_id = int(box.cls.item())  # Access the first element and convert to int
+        class_id = int(box.cls.item())
         class_name = model_names[class_id]
         conf = box.conf.item()
         if class_name == "fall":
@@ -47,27 +44,23 @@ def process_predictions(results, frame):
                 frame_path=frame_path
             )
             # send_sms_alert(tonumber)
-            # send_whatsapp_alert(tonumber)
-            print(f"Fall detected !!!! with confidence: {conf:.2f}")
-            
+            send_whatsapp_alert(tonumber)
+            ic(f"Fall detected !!!! with confidence: {conf:.2f}")
+
         elif class_name == "nofall":
             fall_detected = False
-            print(f"No fall detected with confidence: {conf:.2f}")
-
-        else:
-            fall_detected = False
-            print(f"Neither Output")
+            ic(f"No fall detected with confidence: {conf:.2f}")
 
     return fall_detected
 
 def generate_frames():
-    global alert_set
+    global alert_set,confidence,cap
     while True:
         ret, frame = cap.read()
         if not ret:
             break
         if alert_set:
-            results = model.predict(source=frame,conf=0.25)
+            results = model.predict(source=frame,conf=confidence)
             process_predictions(results, frame)
         _, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
@@ -85,12 +78,14 @@ def video_feed():
 
 @app.route('/send_details', methods=['POST'])
 def send_alert():
-    global alert_set, recipient
+    global alert_set, recipient ,tonumber,confidence
     data = request.get_json()
     recipient = data.get('email', None)
-    tonumber = data.get('phonenumber', None)
-    conf = data.get('confidence', None)
-    if recipient and tonumber and conf:
+    tonumber = data.get('phone', None)
+    confidence = data.get('conf', None)
+    confidence = float(confidence)
+    ic(data,recipient,tonumber,confidence)
+    if recipient and tonumber and confidence:
         alert_set = True
         return jsonify({"message": "Email and Phone saved successfully!"})
     return jsonify({"message": "Invalid details"}), 400
@@ -101,3 +96,4 @@ def updateFallStatus():
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
+    cap = cv2.VideoCapture(0)
