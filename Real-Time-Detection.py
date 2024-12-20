@@ -49,7 +49,6 @@ def process_predictions(results, frame):
 
         elif class_name == "nofall":
             fall_detected = False
-            ic(f"No fall detected with confidence: {conf:.2f}")
 
     return fall_detected
 
@@ -95,5 +94,5 @@ def updateFallStatus():
     return jsonify({"status": fall_detected})
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=5000)
     cap = cv2.VideoCapture(0)
+    app.run(debug=True, host='0.0.0.0', port=5000)
