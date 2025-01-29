@@ -7,3 +7,7 @@ python-dotenv
 torch
 torchvision
 torchaudio
+flask
+flask-cors
+twilio
+email-validator
