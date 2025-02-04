@@ -43,7 +43,7 @@ def process_predictions(results, frame):
                 receiver_email=recipient,
                 frame_path=frame_path
             )
-            # send_sms_alert(tonumber)
+            send_sms_alert(tonumber)
             send_whatsapp_alert(tonumber)
             ic(f"Fall detected !!!! with confidence: {conf:.2f}")
 
@@ -64,7 +64,6 @@ def generate_frames():
         _, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
 
 
 @app.route('/')
