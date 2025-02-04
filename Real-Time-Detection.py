@@ -1,6 +1,7 @@
 import cv2
 import torch
 import threading
+import multiprocessing
 import time
 from ultralytics import YOLO
 from flask import Flask, render_template, Response, request, jsonify
@@ -8,6 +9,8 @@ from Email import send_email_alert
 from Whatsapp import send_whatsapp_alert
 from Message import send_sms_alert
 from icecream import ic
+import os
+import shutil
 
 model = YOLO("model/model.pt")
 
@@ -26,6 +29,9 @@ def process_predictions(results, frame):
     boxes = results[0].boxes
     model_names = model.names
 
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
+
     for box in boxes:
         class_id = int(box.cls.item())
         class_name = model_names[class_id]
@@ -34,23 +40,36 @@ def process_predictions(results, frame):
             fall_detected = True
             fall_detected_time = time.time()
 
-            frame_path = f"output\\fall_frame_{fall_detected_time}.jpg"
-            cv2.imwrite(frame_path, frame)
+            frame_path = os.path.join(output_dir, f"fall_frame_{fall_detected_time}.jpg")
+            if not cv2.imwrite(frame_path, frame):
+                print(f"Failed to save frame at {frame_path}")
 
-            send_email_alert(
-                label="Fall Detected!",
-                confidence_score=conf,
-                receiver_email=recipient,
-                frame_path=frame_path
-            )
-            send_sms_alert(tonumber)
-            send_whatsapp_alert(tonumber)
+            p_email = multiprocessing.Process(target=send_email_alert, kwargs={
+                "label": "Fall Detected!",
+                "confidence_score": conf,
+                "receiver_email": recipient,
+                "frame_path": frame_path
+            })
+            
+            p_email.start()
+            p_email.join()
+
+            p_sms = multiprocessing.Process(target=send_sms_alert, args=(tonumber,))
+            p_whatsapp = multiprocessing.Process(target=send_whatsapp_alert, args=(tonumber,))
+
+            p_sms.start()
+            p_whatsapp.start()
+
+            p_sms.join()
+            p_whatsapp.join()
+
             ic(f"Fall detected !!!! with confidence: {conf:.2f}")
 
         elif class_name == "nofall":
             fall_detected = False
 
     return fall_detected
+
 
 def generate_frames():
     global alert_set,confidence,cap
@@ -94,4 +113,7 @@ def updateFallStatus():
 
 if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
+    output_dir = "output"
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
     app.run(debug=True, host='0.0.0.0', port=5000)
