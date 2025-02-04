@@ -67,7 +67,7 @@
      It should be like this for Windows
 
    ```bash
-   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
    ```
 
 6. **Verification**
@@ -78,7 +78,7 @@
 
 ### Running the System
 
-1. **Test YOLO11 Inference by downloading the models from Ultralytics**
+1. **Test YOLO11 Inference according to Ultralytics website and detection file**
 
    ```bash
    python detection.py --model yolo11n.onnx --source data/images/horses.jpg
@@ -100,15 +100,28 @@
    - Modify the name for the current operation.
    - Adjust the parameters value to properly utilize the GPU.
 
+   **_Training through CLI_** :
+
    ```bash
    yolo detect train model=yolo11n.pt data="path/to/dataset" imgsz=224 device=0 workers=2 batch=16 epochs=100 patience=50 name=yolo11_fallsafe_detection
    ```
 
+   **_Training through GUI_** :
+
+   - Use python for training the model.
+   - Use Roboflow website for training.
+   - Use Ultralyticss HUB.
+   - Use Google Colab for training
+
 4. **Continue Training after Pause OR Further Train model with new/updated Dataset**
+
+   **_Training through CLI_** :
 
    ```bash
    yolo detect train model=runs/classify/yolo11_fallsafe_detection/weights/last.pt resume=True
    ```
+
+   **_Training through GUI_** : Restart Training as most services dont support pausing.
 
 5. **Perform Classification**
 
